@@ -11,7 +11,8 @@ document.body.classList.add("fx")
 const shaderCode = `
     void mainImage( out vec4 fragColor, in vec2 fragCoord )
     {
-        fragColor = vec4(fx_color_id.rgb, fx_boolean_id ? 1.0 : 0.0);
+      vec2 uv = fragCoord.xy / iResolution.xy;
+      fragColor = vec4(uv,0.5+0.5*sin(iTime), iMouse.x);
     }
 `
 

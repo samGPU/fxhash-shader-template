@@ -30,7 +30,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 fxHash parameters provide a unique way for a user to interact with the generative art minting process. A full specification for these can be found [here](https://docs.fxhash.xyz/parameter-definition-specifications).
 
 Parameters that are of the type `number`, `boolean`, `color`, or `bigint`, will be added to the shader code as variables.
-This means that they can be used in shader code.
+This means that they can be used in shader code and accessed using the naming convention fx_ followed by the parameter id. For example, fx_color_id for the example color parameter.
 
 This example code will fill the screen with a color chosen by the user in the fxParameters interface, and set the alpha via a boolean value.
 
