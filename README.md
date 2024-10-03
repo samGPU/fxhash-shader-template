@@ -65,3 +65,14 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 Find more about the fxhash/cli [here](https://www.npmjs.com/package/@fxhash/cli).
 
 You are now ready to start creating your generative art project.
+
+### Contribute
+
+If you would like to contribute new features to this template, please feel free to do so.
+
+A list of ideas is below:
+- [ ] Include all shadertoy default uniforms
+- [ ] Include multimedia channel references e.g. images and sound as you can on shadertoy
+- [ ] Improve parameters updating with the fxhash dev interface
+
+If you have made some changes, put in a pull-request and tag me!
