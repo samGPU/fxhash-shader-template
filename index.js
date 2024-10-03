@@ -11,15 +11,9 @@ document.body.classList.add("fx")
 const shaderCode = `
     void mainImage( out vec4 fragColor, in vec2 fragCoord )
     {
-        vec2 uv = fragCoord.xy / iResolution.xy;
-        fragColor = vec4(uv,0.5+0.5*sin(iTime), iMouse.x);
+        fragColor = vec4(fx_color_id.rgb, fx_boolean_id ? 1.0 : 0.0);
     }
 `
-
-// Create a new renderer with the shader code
-// The shader code is inserted into the fragment shader
-// The renderer is boilerplate, you can focus on the shader code
-const renderer = new Renderer(shaderCode)
 
 // Define the parameters for your shader if you are using them
 $fx.params([
@@ -59,18 +53,21 @@ $fx.params([
   },
 ])
 
+// Create a new renderer with the shader code
+// The shader code is inserted into the fragment shader
+// The renderer is boilerplate, you can focus on the shader code
+const renderer = new Renderer(shaderCode)
+
 // Tell the shader to update the parameters when they are changed
 $fx.on(
   "params:update",
   // we do nothing when the event is recieved
   () => {},
   () => {
-    renderer.assignUniforms($fx.getParams())
+    renderer.addVariablesToShader();
+    renderer.buildShader();
   }
 )
-
-// Assign the parameters to the renderer once to begin
-renderer.assignUniforms($fx.getParams())
 
 // Define the features for your project
 $fx.features({

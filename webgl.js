@@ -16,6 +16,7 @@ export default class Renderer {
         uniform vec2 iResolution;
         uniform vec2 iMouse;
         uniform float iTime;
+        // insert-variables
 
         out vec4 outColor;
 
@@ -46,12 +47,29 @@ export default class Renderer {
             this.#mainImageCode = mainImageCode;
         }
 
+        this.buildShader(canvas);
+
+        // Set a random seed and a cental mouse position to begin
+        this.seed = $fx.rand();
+        this.mouse = { x: 0.5, y: 0.5 };
+
+        // Add the mousemove event listener
+        window.addEventListener("mousemove", (e) => {
+            this.mouse.x = e.clientX / window.innerWidth;
+            this.mouse.y = e.clientY / window.innerHeight;
+        });
+
+        this.animate();
+    }
+
+    buildShader(canvas) {
         // Create the WebGL2 context and programs
         // iResolution, iMouse, iTime are the default uniforms
         this.gl = canvas.getContext("webgl2");
         if (!this.gl) {
             throw new Error("WebGL2 not supported");
         }
+        this.addVariablesToShader();
         this.program = this.createProgram(this.gl);
         const positionAttributeLocation = this.gl.getAttribLocation(this.program, "a_position");
         this.resolutionLocation = this.gl.getUniformLocation(this.program, "iResolution");
@@ -78,18 +96,6 @@ export default class Renderer {
             0,
             0
         )
-
-        // Set a random seed and a cental mouse position to begin
-        this.seed = $fx.rand();
-        this.mouse = { x: 0.5, y: 0.5 };
-
-        // Add the mousemove event listener
-        window.addEventListener("mousemove", (e) => {
-            this.mouse.x = e.clientX / window.innerWidth;
-            this.mouse.y = e.clientY / window.innerHeight;
-        });
-
-        this.animate();
     }
 
     // Main drawing loop
@@ -120,6 +126,8 @@ export default class Renderer {
         // insert the mainImage code into the fragment shader
         const fragmentCode = this.#fragmentShaderSource.replace("//insert-here", this.#mainImageCode);
 
+        console.log(fragmentCode);
+
         const vertexShader = this.createShader(gl, this.#vertexShaderSource, gl.VERTEX_SHADER);
         const fragmentShader = this.createShader(gl, fragmentCode, gl.FRAGMENT_SHADER);
         const program = gl.createProgram();
@@ -143,47 +151,60 @@ export default class Renderer {
      *  - bigint        (bigint)
      * 
      * Unsupported types:
-     *  - string        no way to represent it as a uniform as standard
+     *  - string        no way to represent it in webgl as standard
      *                  +   You could use an algorithm to convert it to a number 
      *                      following some devised ruleset if you really want a 
      *                      string parameter
      *  - select        its just a string with extra steps so same applies
-     * 
-     * @param {Object} uniforms - An object containing the uniforms to assign to the shader
-     *                              key: the name of the uniform
-     *                              value: the value to assign to the uniform
      */
-    assignUniforms(uniforms) {
-        console.log(uniforms);
-        // Loop through the uniforms and assign them to the shader
-        for (const key in uniforms) {
+    addVariablesToShader() {
+        const variables = $fx.getParams();
+        // Loop through the variables and assign them to the shader
+        for (const key in variables) {
             // Get the value for the key
-            const value = uniforms[key];
+            const value = variables[key];
 
-            // Create a location for it using the convention u_{key}
-            const uniformLocation = this.gl.getUniformLocation(this.program, `u_${key}`);
+            console.log(value, typeof value, Number(value));
             
-            // Determine the type of the uniform
+            // Determine the type of the variable
+            // Based on the type, assign the variable to the shader by replacing at the comment
             if (typeof value === 'number') {
-                // Number is stored as a float
-                this.gl.uniform1f(uniformLocation, value);
+
+                const stringToAdd = `float fx_${key} = ${value};\n// insert-variables`;
+
+                this.#fragmentShaderSource = 
+                    this.#fragmentShaderSource.replace("// insert-variables", stringToAdd);
             } else if (typeof value === 'boolean') {
-                // Boolean is stored as a bool (0, 1)
-                this.gl.uniform1f(uniformLocation, value);
+
+                const stringToAdd = `bool fx_${key} = ${value};\n// insert-variables`;
+
+                this.#fragmentShaderSource = 
+                    this.#fragmentShaderSource.replace("// insert-variables", stringToAdd);
             } else if (typeof value === 'object') {
-                // Color is stored as a vec4
                 const { r, g, b, a } = value.obj.rgba;
-                this.gl.uniform4f(
-                    uniformLocation,
-                    value.r,
-                    value.g,
-                    value.b,
-                    value.a
-                );
+
+                console.log(value.obj.rgba);
+                console.log(`${r.toFixed(1)}, ${parseFloat(g)}, ${parseFloat(b)}, ${parseFloat(a)}`);
+
+                const stringToAdd = `vec4 fx_${key} = vec4(${r.toFixed(1)}, ${g.toFixed(1)}, ${b.toFixed(1)}, ${a.toFixed(1)});\n// insert-variables`;
+
+                this.#fragmentShaderSource = 
+                    this.#fragmentShaderSource.replace("// insert-variables", stringToAdd);
             } else if (typeof value === 'bigint') {
-                // BigInt is stored as a integer
-                const numberValue = Number(value);
-                this.gl.uniform1i(uniformLocation, numberValue);
+                let bigint = 0;
+                // Ensure the bigint is within the range of a glsl integer
+                if(value > 2147483647) {
+                    bigint = 2147483647;
+                } else if(value < -2147483648) {
+                    bigint = -2147483648;
+                } else {
+                    bigint = Number(value);
+                }
+
+                const stringToAdd = `int fx_${key} = ${bigint};\n// insert-variables`;
+
+                this.#fragmentShaderSource = 
+                    this.#fragmentShaderSource.replace("// insert-variables", stringToAdd);
             } else {
                 // Unsupported type
                 console.warn(`fxParameter type not supported: ${key} : ${typeof value}`);
